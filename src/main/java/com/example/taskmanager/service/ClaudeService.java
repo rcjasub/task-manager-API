@@ -24,9 +24,9 @@ public class ClaudeService {
     private final ObjectMapper objectMapper;
 
     public ClaudeService(@Value("${anthropic.api-key}") String apiKey) {
-        this.client = AnthropicOkHttpClient.builder()
-                .apiKey(apiKey)
-                .build();
+        this.client = (apiKey == null || apiKey.isBlank())
+                ? null
+                : AnthropicOkHttpClient.builder().apiKey(apiKey).build();
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule());
     }
@@ -36,6 +36,9 @@ public class ClaudeService {
      * TaskSuggestion. Nothing is persisted.
      */
     public TaskSuggestion suggestTask(String userDescription) {
+        if (client == null) {
+            throw new ClaudeParseException("ANTHROPIC_API_KEY is not configured — AI suggestions are unavailable.");
+        }
         String systemPrompt = """
                 You are a task management assistant. The user will describe a task in plain English.
                 Your job is to extract structured task data and return it as a single JSON object.

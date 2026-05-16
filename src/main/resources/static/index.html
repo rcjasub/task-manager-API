@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Variables ─────────────────────────────────────────────────────────── */
+    :root {
+      --bg:         #0e0e0e;
+      --surface:    #161616;
+      --border:     #2a2a2a;
+      --border-hi:  #3f3f3f;
+      --text:       #e8e8e8;
+      --text-dim:   #888;
+      --text-faint: #444;
+      --accent:     #e8ff47;
+      --accent-dim: #b8cc2a;
+      --red:        #ff4d4d;
+      --blue:       #4da8ff;
+      --mono:       'IBM Plex Mono', monospace;
+      --sans:       'IBM Plex Sans', sans-serif;
+      --radius:     2px;
+      --transition: 140ms ease;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      grid-template-rows: 56px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .logo-sep { color: var(--text-faint); margin: 0 4px; }
+
+    .header-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+    }
+
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #task-count {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────────────────── */
+    aside {
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .panel-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .panel-toggle {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text-faint);
+      transition: transform var(--transition);
+    }
+
+    .panel.collapsed .panel-toggle { transform: rotate(-90deg); }
+    .panel.collapsed .panel-body { display: none; }
+
+    .panel-body { padding: 0 20px 16px; }
+
+    /* ── Forms ─────────────────────────────────────────────────────────────── */
+    .field { margin-bottom: 12px; }
+
+    label {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 7px 10px;
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color var(--transition);
+      appearance: none;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    textarea { resize: vertical; min-height: 64px; }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+      cursor: pointer;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      transition: background var(--transition), color var(--transition), opacity var(--transition);
+    }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0e0e0e;
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-dim); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+      width: 100%;
+      justify-content: center;
+      margin-top: 6px;
+    }
+    .btn-ghost:hover:not(:disabled) {
+      border-color: var(--border-hi);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid transparent;
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    .btn-danger:hover { border-color: var(--red); }
+
+    /* ── AI Suggest ────────────────────────────────────────────────────────── */
+    .suggest-area {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .suggest-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 13px;
+      padding: 8px 10px;
+      border-radius: var(--radius);
+      outline: none;
+      resize: vertical;
+      min-height: 60px;
+      transition: border-color var(--transition);
+    }
+    .suggest-input:focus { border-color: var(--accent); border-left-color: var(--accent); }
+
+    .suggest-result {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      display: none;
+    }
+
+    .suggest-result.visible { display: block; }
+
+    .suggest-result-field {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .suggest-result-key {
+      font-family: var(--mono);
+      color: var(--accent);
+      font-size: 10px;
+      min-width: 80px;
+      padding-top: 1px;
+      text-transform: uppercase;
+    }
+
+    .suggest-result-val { color: var(--text); }
+
+    /* ── Main content ──────────────────────────────────────────────────────── */
+    main {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .main-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* ── Filters ───────────────────────────────────────────────────────────── */
+    .filters {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .filter-btn:hover { border-color: var(--border-hi); color: var(--text); }
+    .filter-btn.active { background: var(--accent); color: #0e0e0e; border-color: var(--accent); }
+
+    /* ── Task list ─────────────────────────────────────────────────────────── */
+    #task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid transparent;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+      align-items: start;
+      transition: border-color var(--transition), background var(--transition);
+      animation: slideIn 180ms ease both;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-card:hover { border-color: var(--border-hi); background: #1a1a1a; }
+
+    .task-card[data-priority="HIGH"]   { border-left-color: var(--red); }
+    .task-card[data-priority="MEDIUM"] { border-left-color: var(--accent); }
+    .task-card[data-priority="LOW"]    { border-left-color: var(--blue); }
+
+    .task-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .task-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+
+    .task-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 99px;
+      border: 1px solid;
+    }
+
+    .badge-priority-HIGH   { color: var(--red);    border-color: var(--red);    background: rgba(255,77,77,.08); }
+    .badge-priority-MEDIUM { color: var(--accent);  border-color: var(--accent); background: rgba(232,255,71,.06); }
+    .badge-priority-LOW    { color: var(--blue);    border-color: var(--blue);   background: rgba(77,168,255,.08); }
+
+    .badge-status-TODO        { color: var(--text-dim); border-color: var(--border); }
+    .badge-status-IN_PROGRESS { color: var(--accent);   border-color: var(--accent); background: rgba(232,255,71,.06); }
+    .badge-status-DONE        { color: #4dff91;          border-color: #4dff91;        background: rgba(77,255,145,.06); }
+
+    .badge-date { color: var(--text-dim); border-color: var(--border); font-family: var(--mono); }
+
+    .task-actions {
+      display: flex;
+      gap: 4px;
+      grid-row: 1 / 3;
+      align-self: center;
+    }
+
+    /* ── Empty state ───────────────────────────────────────────────────────── */
+    .empty {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--text-faint);
+    }
+
+    .empty-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty p {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Toast ─────────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 200ms, transform 200ms;
+      pointer-events: none;
+      z-index: 999;
+      max-width: 320px;
+    }
+
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Suggest button row ────────────────────────────────────────────────── */
+    .suggest-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .suggest-btns .btn { margin-top: 0; }
+
+    .btn-accent {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-accent:hover:not(:disabled) {
+      background: rgba(232,255,71,.1);
+    }
+
+    /* ── Spinner ───────────────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 600ms linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header>
+    <span class="logo">Task<span class="logo-sep">/</span>Mgr</span>
+    <span class="header-tag">v0.1</span>
+    <div class="header-right">
+      <span id="task-count">— tasks</span>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+  <aside>
+
+    <!-- AI Suggest -->
+    <div class="panel" id="panel-suggest">
+      <div class="panel-header" onclick="togglePanel('panel-suggest')">
+        <span class="panel-label">⚡ AI Suggest</span>
+        <span class="panel-toggle">▾</span>
+      </div>
+      <div class="panel-body">
+        <div class="suggest-area">
+          <textarea
+            class="suggest-input"
+            id="suggest-input"
+            placeholder="e.g. finish the quarterly report before Friday"
+            rows="3"
+          ></textarea>
+          <div class="suggest-btns">
+            <button class="btn btn-primary" id="suggest-btn" onclick="handleSuggest()">
+              Preview
+            </button>
+            <button class="btn btn-accent" id="suggest-create-btn" onclick="handleSuggestAndCreate()">
+              Suggest &amp; Create
+            </button>
+          </div>
+
+          <!-- Result preview -->
+          <div class="suggest-result" id="suggest-result"></div>
+
+          <button class="btn btn-ghost" id="suggest-use-btn" style="display:none" onclick="useSuggestion()">
+            Use This →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Task -->
+    <div class="panel" id="panel-create">
+      <div class="panel-header" onclick="togglePanel('panel-create')">
+        <span class="panel-label">+ New Task</span>
+        <span class="panel-toggle">▾</span>
+      </div>
+      <div class="panel-body">
+        <form id="create-form" onsubmit="handleCreate(event)">
+
+          <div class="field">
+            <label for="f-title">Title *</label>
+            <input type="text" id="f-title" placeholder="What needs doing?" required />
+          </div>
+
+          <div class="field">
+            <label for="f-desc">Description</label>
+            <textarea id="f-desc" placeholder="Optional detail…"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="f-due">Due Date</label>
+            <input type="date" id="f-due" />
+          </div>
+
+          <div class="field">
+            <label for="f-priority">Priority</label>
+            <select id="f-priority">
+              <option value="LOW">Low</option>
+              <option value="MEDIUM" selected>Medium</option>
+              <option value="HIGH">High</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="f-status">Status</label>
+            <select id="f-status">
+              <option value="TODO" selected>To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="create-btn">
+            Create Task
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────────────────── -->
+  <main>
+    <div class="main-toolbar">
+      <span class="section-title">Tasks</span>
+      <div class="filters">
+        <button class="filter-btn active" data-filter="ALL"         onclick="setFilter(this)">All</button>
+        <button class="filter-btn"        data-filter="TODO"        onclick="setFilter(this)">To Do</button>
+        <button class="filter-btn"        data-filter="IN_PROGRESS" onclick="setFilter(this)">In Progress</button>
+        <button class="filter-btn"        data-filter="DONE"        onclick="setFilter(this)">Done</button>
+      </div>
+    </div>
+
+    <div id="task-list"></div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  /* ── State ──────────────────────────────────────────────────────────────── */
+  let tasks       = [];
+  let activeFilter = 'ALL';
+  let suggestion  = null;   // last AI suggestion, for "Use This"
+
+  /* ── Boot ───────────────────────────────────────────────────────────────── */
+  fetchTasks();
+
+  /* ── API helpers ────────────────────────────────────────────────────────── */
+  async function fetchTasks() {
+    try {
+      const res = await fetch('/tasks');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      tasks = await res.json();
+      renderTasks();
+    } catch (e) {
+      toast('Failed to load tasks: ' + e.message, 'error');
+    }
+  }
+
+  async function handleCreate(e) {
+    e.preventDefault();
+    const btn = document.getElementById('create-btn');
+    setLoading(btn, true);
+
+    const body = {
+      title:       document.getElementById('f-title').value.trim(),
+      description: document.getElementById('f-desc').value.trim() || null,
+      dueDate:     document.getElementById('f-due').value   || null,
+      priority:    document.getElementById('f-priority').value,
+      status:      document.getElementById('f-status').value,
+    };
+
+    try {
+      const res = await fetch('/tasks', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+
+      const created = await res.json();
+      tasks.unshift(created);
+      renderTasks();
+      document.getElementById('create-form').reset();
+      toast('Task created', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  }
+
+  async function handleDelete(id) {
+    try {
+      const res = await fetch(`/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      tasks = tasks.filter(t => t.id !== id);
+      renderTasks();
+      toast('Task deleted', 'success');
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  async function handleSuggest() {
+    const input = document.getElementById('suggest-input').value.trim();
+    if (!input) { toast('Enter a description first', 'error'); return; }
+
+    const btn    = document.getElementById('suggest-btn');
+    const result = document.getElementById('suggest-result');
+    const useBtn = document.getElementById('suggest-use-btn');
+
+    setLoading(btn, true);
+    result.classList.remove('visible');
+    useBtn.style.display = 'none';
+    suggestion = null;
+
+    try {
+      const res = await fetch('/tasks/suggest', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ description: input }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+
+      suggestion = await res.json();
+      renderSuggestion(suggestion);
+      result.classList.add('visible');
+      useBtn.style.display = 'flex';
+    } catch (e) {
+      toast('Suggest failed: ' + e.message, 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  }
+
+  async function handleSuggestAndCreate() {
+    const input = document.getElementById('suggest-input').value.trim();
+    if (!input) { toast('Enter a description first', 'error'); return; }
+
+    const btn = document.getElementById('suggest-create-btn');
+    setLoading(btn, true);
+
+    try {
+      // Step 1: get suggestion from Claude
+      const suggestRes = await fetch('/tasks/suggest', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ description: input }),
+      });
+
+      if (!suggestRes.ok) {
+        const err = await suggestRes.json().catch(() => ({}));
+        // 502 = Claude parse failure; surface the exact message so the user
+        // knows whether it's a bad value, missing field, or network issue
+        throw new Error(err.message || `Suggest failed (HTTP ${suggestRes.status})`);
+      }
+
+      const s = await suggestRes.json();
+
+      // Step 2: immediately POST to /tasks — no form, no review
+      // Server-side @Valid runs here; any validation error comes back as a
+      // 400 with err.message set to the full field-level detail
+      const createRes = await fetch('/tasks', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          title:       s.title,
+          description: s.description || null,
+          dueDate:     s.dueDate     || null,
+          priority:    s.priority,
+          status:      s.status,
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json().catch(() => ({}));
+        throw new Error(err.message || `Create failed (HTTP ${createRes.status})`);
+      }
+
+      const created = await createRes.json();
+      tasks.unshift(created);
+      renderTasks();
+      document.getElementById('suggest-input').value = '';
+      toast(`"${created.title}" created`, 'success');
+
+    } catch (e) {
+      // Both suggest failures (502) and validation failures (400) land here
+      // and are shown verbatim so the user sees exactly what went wrong
+      toast(e.message, 'error');
+    } finally {
+      setLoading(btn, false);
+    }
+  }
+
+  /* ── Suggestion helpers ─────────────────────────────────────────────────── */
+  function renderSuggestion(s) {
+    const result = document.getElementById('suggest-result');
+    const fields = [
+      ['Title',    s.title       || '—'],
+      ['Desc',     s.description || '—'],
+      ['Due',      s.dueDate     || '—'],
+      ['Priority', s.priority    || '—'],
+      ['Status',   s.status      || '—'],
+    ];
+    result.innerHTML = fields.map(([k, v]) => `
+      <div class="suggest-result-field">
+        <span class="suggest-result-key">${k}</span>
+        <span class="suggest-result-val">${escHtml(v)}</span>
+      </div>
+    `).join('');
+  }
+
+  function useSuggestion() {
+    if (!suggestion) return;
+    document.getElementById('f-title').value    = suggestion.title       || '';
+    document.getElementById('f-desc').value     = suggestion.description || '';
+    document.getElementById('f-due').value      = suggestion.dueDate     || '';
+    document.getElementById('f-priority').value = suggestion.priority    || 'MEDIUM';
+    document.getElementById('f-status').value   = suggestion.status      || 'TODO';
+
+    // Expand create panel and scroll to it
+    const panel = document.getElementById('panel-create');
+    if (panel.classList.contains('collapsed')) togglePanel('panel-create');
+    panel.scrollIntoView({ behavior: 'smooth' });
+    toast('Suggestion loaded into form', 'success');
+  }
+
+  /* ── Render ─────────────────────────────────────────────────────────────── */
+  function renderTasks() {
+    const listEl = document.getElementById('task-list');
+    const countEl = document.getElementById('task-count');
+    countEl.textContent = `${tasks.length} task${tasks.length !== 1 ? 's' : ''}`;
+
+    const filtered = activeFilter === 'ALL'
+      ? tasks
+      : tasks.filter(t => t.status === activeFilter);
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">□</div>
+          <p>${activeFilter === 'ALL' ? 'No tasks yet' : 'No ' + fmtStatus(activeFilter) + ' tasks'}</p>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map((t, i) => `
+      <div class="task-card"
+           data-priority="${t.priority}"
+           style="animation-delay:${i * 30}ms">
+        <div>
+          <div class="task-title">${escHtml(t.title)}</div>
+          ${t.description ? `<div class="task-desc">${escHtml(t.description)}</div>` : ''}
+          <div class="task-meta">
+            <span class="badge badge-priority-${t.priority}">${t.priority}</span>
+            <span class="badge badge-status-${t.status}">${fmtStatus(t.status)}</span>
+            ${t.dueDate ? `<span class="badge badge-date">⏷ ${t.dueDate}</span>` : ''}
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="btn btn-danger" onclick="handleDelete(${t.id})" title="Delete">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ── Filter ─────────────────────────────────────────────────────────────── */
+  function setFilter(btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderTasks();
+  }
+
+  /* ── Panel toggle ───────────────────────────────────────────────────────── */
+  function togglePanel(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+  }
+
+  /* ── UI utils ───────────────────────────────────────────────────────────── */
+  function setLoading(btn, loading) {
+    btn.disabled = loading;
+    if (loading) {
+      btn._text = btn.innerHTML;
+      btn.innerHTML = `<span class="spinner"></span> Working…`;
+    } else {
+      btn.innerHTML = btn._text;
+    }
+  }
+
+  let toastTimer;
+  function toast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent  = msg;
+    el.className    = 'show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.className = ''; }, 3200);
+  }
+
+  function fmtStatus(s) {
+    return { TODO: 'To Do', IN_PROGRESS: 'In Progress', DONE: 'Done' }[s] || s;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>
