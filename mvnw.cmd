@@ -76,9 +76,12 @@ IF "%MVNW_VERBOSE%"=="true" ECHO Finished downloading %WRAPPER_JAR%
 SET /P MAVEN_CONFIG=<"%MAVEN_PROJECTBASEDIR%.mvn\jvm.config" 2>NUL
 SET MAVEN_OPTS=%MAVEN_CONFIG% %MAVEN_OPTS%
 
+REM Strip trailing backslash to avoid \" breaking argument parsing
+SET MAVEN_PROJECTBASEDIR_NOSLASH=%MAVEN_PROJECTBASEDIR:~0,-1%
+
 %MAVEN_JAVA_EXE% %MAVEN_OPTS% ^
   -classpath %WRAPPER_JAR% ^
-  "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR%" ^
+  "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR_NOSLASH%" ^
   org.apache.maven.wrapper.MavenWrapperMain %MAVEN_CONFIG% %*
 
 SET ERROR_CODE=%ERRORLEVEL%
