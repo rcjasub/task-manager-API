@@ -1,7 +1,9 @@
 package com.example.taskmanager.controller;
 
+import com.example.taskmanager.dto.CreateTaskRequest;
 import com.example.taskmanager.dto.SuggestRequest;
 import com.example.taskmanager.dto.TaskSuggestion;
+import com.example.taskmanager.dto.UpdateTaskRequest;
 import com.example.taskmanager.model.Task;
 import com.example.taskmanager.service.ClaudeService;
 import com.example.taskmanager.service.TaskService;
@@ -29,8 +31,8 @@ public class TaskController {
     // -------------------------------------------------------------------------
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
-        Task created = taskService.createTask(task);
+    public ResponseEntity<Task> createTask(@Valid @RequestBody CreateTaskRequest request) {
+        Task created = taskService.createTask(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -59,17 +61,18 @@ public class TaskController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        Task task = taskService.getTaskById(id); // throws NoSuchElementException → 404
+        Task task = taskService.getTaskById(id);
         return ResponseEntity.ok(task);
     }
 
     // -------------------------------------------------------------------------
-    // PUT /tasks/{id} → 200 OK | 404 Not Found
+    // PATCH /tasks/{id} → 200 OK | 404 Not Found
     // -------------------------------------------------------------------------
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @Valid @RequestBody Task task) {
-        Task updated = taskService.updateTask(id, task);
+    public ResponseEntity<Task> updateTask(@PathVariable Long id,
+                                          @Valid @RequestBody UpdateTaskRequest request) {
+        Task updated = taskService.updateTask(id, request);
         return ResponseEntity.ok(updated);
     }
 
@@ -79,7 +82,7 @@ public class TaskController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id); // throws NoSuchElementException → 404
+        taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }
 }

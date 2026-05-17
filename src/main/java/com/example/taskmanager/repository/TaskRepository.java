@@ -3,6 +3,7 @@ package com.example.taskmanager.repository;
 import com.example.taskmanager.model.Priority;
 import com.example.taskmanager.model.Status;
 import com.example.taskmanager.model.Task;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long> {
+
+    // Default sort: dueDate ascending, nulls last (undated tasks sink to the bottom)
+    Sort SORT_BY_DUE_DATE = Sort.by(Sort.Order.asc("dueDate").nullsLast());
 
     // Filter by status — e.g. GET /tasks?status=TODO
     List<Task> findByStatus(Status status);

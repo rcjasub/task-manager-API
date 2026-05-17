@@ -1,7 +1,6 @@
 package com.example.taskmanager.service;
 
 import com.anthropic.client.AnthropicClient;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.Model;
@@ -12,7 +11,6 @@ import com.example.taskmanager.model.Status;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,10 +21,8 @@ public class ClaudeService {
     private final AnthropicClient client;
     private final ObjectMapper objectMapper;
 
-    public ClaudeService(@Value("${anthropic.api-key}") String apiKey) {
-        this.client = (apiKey == null || apiKey.isBlank())
-                ? null
-                : AnthropicOkHttpClient.builder().apiKey(apiKey).build();
+    public ClaudeService(AnthropicClient client) {
+        this.client = client;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule());
     }
@@ -36,9 +32,6 @@ public class ClaudeService {
      * TaskSuggestion. Nothing is persisted.
      */
     public TaskSuggestion suggestTask(String userDescription) {
-        if (client == null) {
-            throw new ClaudeParseException("ANTHROPIC_API_KEY is not configured — AI suggestions are unavailable.");
-        }
         String systemPrompt = """
                 You are a task management assistant. The user will describe a task in plain English.
                 Your job is to extract structured task data and return it as a single JSON object.
@@ -63,7 +56,7 @@ public class ClaudeService {
                 """.formatted(LocalDate.now());
 
         MessageCreateParams params = MessageCreateParams.builder()
-                .model(Model.CLAUDE_SONNET_4_5)
+                .model(Model.CLAUDE_SONNET_4_20250514)
                 .maxTokens(512L)
                 .system(systemPrompt)
                 .addUserMessage(userDescription)

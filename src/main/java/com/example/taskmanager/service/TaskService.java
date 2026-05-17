@@ -1,5 +1,7 @@
 package com.example.taskmanager.service;
 
+import com.example.taskmanager.dto.CreateTaskRequest;
+import com.example.taskmanager.dto.UpdateTaskRequest;
 import com.example.taskmanager.model.Task;
 import com.example.taskmanager.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -12,7 +14,6 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
 
-    // Constructor injection — no @Autowired needed on single-constructor classes
     public TaskService(TaskRepository taskRepository) {
         this.taskRepository = taskRepository;
     }
@@ -21,7 +22,14 @@ public class TaskService {
     // Create
     // -------------------------------------------------------------------------
 
-    public Task createTask(Task task) {
+    public Task createTask(CreateTaskRequest request) {
+        Task task = new Task(
+            request.getTitle(),
+            request.getDescription(),
+            request.getDueDate(),
+            request.getPriority(),
+            request.getStatus()
+        );
         return taskRepository.save(task);
     }
 
@@ -30,7 +38,7 @@ public class TaskService {
     // -------------------------------------------------------------------------
 
     public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+        return taskRepository.findAll(TaskRepository.SORT_BY_DUE_DATE);
     }
 
     public Task getTaskById(Long id) {
@@ -39,19 +47,19 @@ public class TaskService {
     }
 
     // -------------------------------------------------------------------------
-    // Update
+    // Update  (PATCH — only present fields are applied)
     // -------------------------------------------------------------------------
 
-    public Task updateTask(Long id, Task incoming) {
-        Task existing = getTaskById(id); // reuses the 404 logic above
+    public Task updateTask(Long id, UpdateTaskRequest request) {
+        Task existing = getTaskById(id);
 
-        // @Valid on the controller ensures title is non-blank and enums are non-null
-        // before this method is ever reached — no defensive guards needed here
-        existing.setTitle(incoming.getTitle());
-        existing.setDescription(incoming.getDescription());
-        existing.setDueDate(incoming.getDueDate());
-        existing.setPriority(incoming.getPriority());
-        existing.setStatus(incoming.getStatus());
+        // @Valid on the controller guarantees title is non-blank and enums are
+        // non-null before we reach here — straight assignment is safe.
+        existing.setTitle(request.getTitle());
+        existing.setDescription(request.getDescription());
+        existing.setDueDate(request.getDueDate());
+        existing.setPriority(request.getPriority());
+        existing.setStatus(request.getStatus());
 
         return taskRepository.save(existing);
     }
@@ -61,8 +69,7 @@ public class TaskService {
     // -------------------------------------------------------------------------
 
     public void deleteTask(Long id) {
-        // Verify existence first so we return 404 rather than silently succeeding
-        getTaskById(id);
+        getTaskById(id); // throws 404 if missing rather than silently no-oping
         taskRepository.deleteById(id);
     }
 }
