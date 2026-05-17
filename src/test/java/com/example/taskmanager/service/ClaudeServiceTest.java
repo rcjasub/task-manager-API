@@ -157,7 +157,7 @@ class ClaudeServiceTest {
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private void stubClaudeResponse(String json) {
-        TextBlock textBlock = TextBlock.builder().text(json).build();
+        TextBlock textBlock = TextBlock.builder().text(json).citations(List.of()).build();
         ContentBlock contentBlock = ContentBlock.ofText(textBlock);
         when(message.content()).thenReturn(List.of(contentBlock));
     }

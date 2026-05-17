@@ -22,10 +22,10 @@ public class CreateTaskRequest {
     private LocalDate dueDate;    // optional, no temporal constraint
 
     @NotNull(message = "priority must not be null")
-    private Priority priority = Priority.MEDIUM;
+    private Priority priority;
 
     @NotNull(message = "status must not be null")
-    private Status status = Status.TODO;
+    private Status status;
 
     // -------------------------------------------------------------------------
     // Getters & Setters

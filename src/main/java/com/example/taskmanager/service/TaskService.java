@@ -38,7 +38,7 @@ public class TaskService {
     // -------------------------------------------------------------------------
 
     public List<Task> getAllTasks() {
-        return taskRepository.findAll(TaskRepository.SORT_BY_DUE_DATE);
+        return taskRepository.findAllSortedByDueDateNullsLast();
     }
 
     public Task getTaskById(Long id) {

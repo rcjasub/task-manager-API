@@ -62,13 +62,13 @@ class TaskServiceTest {
     void getAllTasks_returnsAllTasksSorted() {
         Task second = new Task("Deploy app", null, LocalDate.of(2026, 7, 1),
                 Priority.MEDIUM, Status.TODO);
-        when(taskRepository.findAll(any(Sort.class))).thenReturn(List.of(sampleTask, second));
+        when(taskRepository.findAllSortedByDueDateNullsLast()).thenReturn(List.of(sampleTask, second));
 
         List<Task> result = taskService.getAllTasks();
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getTitle()).isEqualTo("Write tests");
-        verify(taskRepository).findAll(TaskRepository.SORT_BY_DUE_DATE);
+        verify(taskRepository).findAllSortedByDueDateNullsLast();
     }
 
     // ── getTaskById ───────────────────────────────────────────────────────────
