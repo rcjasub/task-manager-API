@@ -56,7 +56,7 @@ public class ClaudeService {
                 """.formatted(LocalDate.now());
 
         MessageCreateParams params = MessageCreateParams.builder()
-                .model(Model.CLAUDE_SONNET_4_20250514)
+                .model(Model.CLAUDE_SONNET_4_6)
                 .maxTokens(512L)
                 .system(systemPrompt)
                 .addUserMessage(userDescription)
